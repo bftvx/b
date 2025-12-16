@@ -150,9 +150,23 @@
       const card = document.createElement("div");
       card.className = "video-card";
       card.innerHTML = `
-        <iframe src="${url}" allowfullscreen></iframe>
-        <div class="title">${title}</div>
-      `;
+  <iframe src="${url}" allowfullscreen></iframe>
+  <div class="title">${title}</div>
+  <div style="text-align:center; margin-top:6px;">
+    <a href="${url}" target="_blank"
+       style="
+         display:inline-block;
+         padding:6px 12px;
+         background:#007bff;
+         color:#fff;
+         text-decoration:none;
+         border-radius:4px;
+         font-size:12px;
+       ">
+       Open in New Tab
+    </a>
+  </div>
+`;
       grid.appendChild(card);
     });
   }
