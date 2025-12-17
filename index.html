@@ -14,10 +14,8 @@
 
     h1 {
       text-align: center;
-      margin-bottom: 10px;
     }
 
-    /* Top input bar */
     .top-bar {
       text-align: center;
       margin-bottom: 30px;
@@ -26,7 +24,6 @@
     .top-bar input {
       padding: 10px;
       width: 260px;
-      max-width: 90%;
       margin: 5px;
       border-radius: 5px;
       border: 1px solid #ccc;
@@ -34,18 +31,13 @@
 
     .top-bar button {
       padding: 10px 16px;
-      border: none;
-      border-radius: 5px;
       background: #007bff;
       color: white;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
     }
 
-    .top-bar button:hover {
-      background: #0056b3;
-    }
-
-    /* Video grid */
     .video-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -69,109 +61,101 @@
     }
 
     .title {
-      margin-top: 8px;
+      text-align: center;
+      margin-top: 6px;
       font-weight: bold;
-      text-align: center;
       font-size: 14px;
-    }
-
-    .empty {
-      text-align: center;
-      color: #666;
-      margin-top: 50px;
     }
   </style>
 </head>
+
 <body>
 
 <h1>📺 My Video Collection</h1>
 
-<!-- 🔼 Add Video Section -->
 <div class="top-bar">
-  <input id="videoUrl" placeholder="Paste embed URL (https://c.com/embed/...)" />
+  <input id="videoUrl" placeholder="Paste embed URL" />
   <input id="videoTitle" placeholder="Video title (optional)" />
   <br>
-  <button onclick="addVideo()">➕ Add Video</button>
+  <button onclick="addVideo()">Add Video</button>
 </div>
 
-<!-- 🎬 Video Grid -->
 <div class="video-grid" id="videoGrid"></div>
 
-<div class="empty" id="emptyMsg" style="display:none;">
-  No videos yet. Add one above ☝️
-</div>
-
 <script>
-  // 🔗 PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-  const API_URL = "https://script.google.com/macros/s/AKfycbzH35gFPsb8sJvkND013zv8kuhBjb3cBkoox2PKclzKKQ7B4ptBPAlzfAbWRRT4UNko/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbySaOb2j6r3Bt8xjekjM3HPOHVvywi3WUoI2BIlH-jke7TwEDhbLeqqxw3_Few7eXSP/exec";
+  const DELETE_PASSWORD = "00000"; // 🔐 CHANGE THIS
 
   async function addVideo() {
-    const url = document.getElementById("videoUrl").value.trim();
-    const title = document.getElementById("videoTitle").value.trim();
+    const url = videoUrl.value.trim();
+    const title = videoTitle.value.trim();
 
-    if (!url) {
-      alert("Please paste a video embed URL");
-      return;
-    }
+    if (!url) return alert("Paste a video URL");
+
+    await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ url, title })
+    });
+
+    videoUrl.value = "";
+    videoTitle.value = "";
+
+    loadVideos();
+  }
+
+  async function deleteVideo(url) {
+    const pwd = prompt("Enter delete password:");
+    if (pwd !== DELETE_PASSWORD) return alert("Wrong password");
+
+    if (!confirm("Delete this video?")) return;
 
     await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({
-        url: url,
-        title: title || "Untitled Video"
+        action: "delete",
+        url: url
       })
     });
-
-    document.getElementById("videoUrl").value = "";
-    document.getElementById("videoTitle").value = "";
 
     loadVideos();
   }
 
   async function loadVideos() {
-    const grid = document.getElementById("videoGrid");
-    const emptyMsg = document.getElementById("emptyMsg");
-
     const res = await fetch(API_URL);
     const data = await res.json();
 
-    grid.innerHTML = "";
-
-    if (data.length === 0) {
-      emptyMsg.style.display = "block";
-      return;
-    }
-
-    emptyMsg.style.display = "none";
+    videoGrid.innerHTML = "";
 
     data.reverse().forEach(row => {
       const [url, title] = row;
 
       const card = document.createElement("div");
       card.className = "video-card";
+
       card.innerHTML = `
-  <iframe src="${url}" allowfullscreen></iframe>
-  <div class="title">${title}</div>
-  <div style="text-align:center; margin-top:6px;">
-    <a href="${url}" target="_blank"
-       style="
-         display:inline-block;
-         padding:6px 12px;
-         background:#007bff;
-         color:#fff;
-         text-decoration:none;
-         border-radius:4px;
-         font-size:12px;
-       ">
-       Open in New Tab
-    </a>
-  </div>
-`;
-      grid.appendChild(card);
+        <iframe src="${url}" allowfullscreen></iframe>
+        <div class="title">${title}</div>
+
+        <div style="text-align:center; margin-top:6px;">
+          <a href="${url}" target="_blank"
+             style="padding:6px 10px;background:#007bff;color:white;
+                    text-decoration:none;border-radius:4px;font-size:12px;">
+            Open in New Tab
+          </a>
+
+          <button onclick="deleteVideo('${url}')"
+            style="padding:6px 10px;background:#dc3545;color:white;
+                   border:none;border-radius:4px;font-size:12px;
+                   cursor:pointer;margin-left:6px;">
+            Delete
+          </button>
+        </div>
+      `;
+
+      videoGrid.appendChild(card);
     });
   }
 
-  // Load videos on page load
   loadVideos();
 </script>
 
