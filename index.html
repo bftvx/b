@@ -19,7 +19,7 @@ h1 {
   font-weight: 500;
 }
 
-/* 🔝 TOP BAR */
+/* TOP BAR */
 .top-bar {
   text-align: center;
   margin-bottom: 35px;
@@ -43,15 +43,9 @@ h1 {
   border-radius: 8px;
   cursor: pointer;
   font-size: 18px;
-  transition: background .2s ease, transform .15s ease;
 }
 
-.top-bar button:hover {
-  background: #3a3a3a;
-  transform: scale(1.05);
-}
-
-/* 🎬 GRID */
+/* GRID */
 .video-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -60,7 +54,7 @@ h1 {
   margin: auto;
 }
 
-/* 🧱 CARD */
+/* CARD */
 .video-card {
   background: #181818;
   padding: 10px;
@@ -68,7 +62,6 @@ h1 {
   transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
 }
 
-/* 🎨 SOFT HOVER COLORS */
 .video-card:nth-child(4n+1):hover { background:#1f2937; }
 .video-card:nth-child(4n+2):hover { background:#1f2f25; }
 .video-card:nth-child(4n+3):hover { background:#2a1f2f; }
@@ -79,24 +72,34 @@ h1 {
   box-shadow: 0 12px 30px rgba(0,0,0,.75);
 }
 
-/* 🎥 VIDEO */
 iframe {
   width: 100%;
   height: 200px;
   border-radius: 12px;
   border: none;
-  background: black;
 }
 
-/* 📌 TITLE */
+/* TITLE */
 .title {
   text-align: center;
   margin-top: 8px;
   font-size: 14px;
   color: #e5e5e5;
+  cursor: pointer;
 }
 
-/* ⚙️ ACTIONS */
+/* TITLE EDIT */
+.title-edit {
+  width: 100%;
+  padding: 6px;
+  background: #101010;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 6px;
+  text-align: center;
+}
+
+/* ACTIONS */
 .actions {
   display: flex;
   justify-content: center;
@@ -104,45 +107,25 @@ iframe {
   margin-top: 10px;
 }
 
-/* 🌐 FAVICON BUTTON */
-.actions a {
-  width: 36px;
-  height: 36px;
-  background: #2a2a2a;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform .15s ease, background .2s ease;
-}
-
-.actions a:hover {
-  background: #3f3f3f;
-  transform: scale(1.15);
-}
-
-.actions img {
-  width: 22px;
-  height: 22px;
-}
-
-/* 🗑️ DELETE BUTTON */
+.actions a,
 .delete-btn {
   width: 36px;
   height: 36px;
   background: #2a2a2a;
   border-radius: 10px;
-  border: none;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform .15s ease, background .2s ease;
+  cursor: pointer;
 }
 
 .delete-btn:hover {
   background: #7a1f1f;
-  transform: scale(1.15);
+}
+
+.actions img {
+  width: 22px;
+  height: 22px;
 }
 
 .delete-btn svg {
@@ -158,51 +141,52 @@ iframe {
 <h1>My Video Collection</h1>
 
 <div class="top-bar">
-  <input id="videoUrl" placeholder="Paste embed or page URL">
+  <input id="videoUrl" placeholder="Paste URL">
   <input id="videoTitle" placeholder="Video title">
   <br>
-  <button onclick="addVideo()" title="Add Video">➕</button>
+  <button onclick="addVideo()">➕</button>
 </div>
 
 <div class="video-grid" id="videoGrid"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbx0hoCsO6o-Np3DCn5YnbJSXcaHl4kBthNXYa-Q5mxV7vQfy0MCgKQ_4oUD-SooLKns/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz-cHGjRLft84eo2SlgZK_Ec8AsRCZn20DHwFR7Cu7MVLD5dJ8W5KQUYVXBIHoGLB9K/exec";
 const DELETE_PASSWORD = "00000";
 
 function getDomain(url) {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return "google.com";
-  }
+  try { return new URL(url).hostname; }
+  catch { return "google.com"; }
 }
 
 async function addVideo() {
-  if (!videoUrl.value.trim()) return alert("Paste a video URL");
-
+  if (!videoUrl.value.trim()) return alert("Paste a URL");
   await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({
-      url: videoUrl.value.trim(),
-      title: videoTitle.value.trim()
-    })
+    body: JSON.stringify({ url: videoUrl.value, title: videoTitle.value })
   });
-
   videoUrl.value = "";
   videoTitle.value = "";
   loadVideos();
 }
 
-async function deleteVideo(url) {
-  if (prompt("Delete password:") !== DELETE_PASSWORD) return alert("Wrong password");
-  if (!confirm("Delete this video?")) return;
+async function renameTitle(url, newTitle) {
+  await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "rename",
+      url: url,
+      title: newTitle
+    })
+  });
+}
 
+async function deleteVideo(url) {
+  if (prompt("Delete password:") !== DELETE_PASSWORD) return;
+  if (!confirm("Delete this video?")) return;
   await fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({ action: "delete", url })
   });
-
   loadVideos();
 }
 
@@ -217,12 +201,12 @@ async function loadVideos() {
 
     card.innerHTML = `
       <iframe src="${url}" allowfullscreen></iframe>
-      <div class="title">${title || "Untitled"}</div>
+      <div class="title" ondblclick="startEdit(this,'${url}')">${title || "Untitled"}</div>
       <div class="actions">
-        <a href="${url}" target="_blank" title="Open">
+        <a href="${url}" target="_blank">
           <img src="https://www.google.com/s2/favicons?domain=${getDomain(url)}&sz=64">
         </a>
-        <button class="delete-btn" onclick="deleteVideo('${url}')" title="Delete">
+        <button class="delete-btn" onclick="deleteVideo('${url}')">
           <svg viewBox="0 0 24 24">
             <path d="M3 6h18v2H3zm2 3h14l-1 12H6L5 9zm5-5h4l1 2H9l1-2z"/>
           </svg>
@@ -231,6 +215,28 @@ async function loadVideos() {
     `;
     videoGrid.appendChild(card);
   });
+}
+
+/* ✏️ TRIPLE CLICK (dblclick workaround) */
+function startEdit(el, url) {
+  const input = document.createElement("input");
+  input.value = el.innerText;
+  input.className = "title-edit";
+  el.replaceWith(input);
+  input.focus();
+
+  input.onkeydown = e => {
+    if (e.key === "Enter") finishEdit(input, url);
+    if (e.key === "Escape") loadVideos();
+  };
+
+  input.onblur = () => finishEdit(input, url);
+}
+
+async function finishEdit(input, url) {
+  if (!input.value.trim()) return loadVideos();
+  await renameTitle(url, input.value.trim());
+  loadVideos();
 }
 
 loadVideos();
