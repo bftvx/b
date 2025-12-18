@@ -144,17 +144,14 @@ iframe {
   <input id="videoUrl" placeholder="Paste URL">
   <input id="videoTitle" placeholder="Video title">
   <br>
-  <button onclick="addVideo()" title="Add video">➕</button>
+  <button onclick="addVideo()">➕</button>
 </div>
 
 <div class="video-grid" id="videoGrid"></div>
 
 <script>
-/* ================= CONFIG ================= */
-const API_URL = "https://script.google.com/macros/s/AKfycby9cU8_IZyMN6dYYjP9mEXc0h1nq5DLupUc9D6WGJhyDx6djj2gKb4yhoq6mU9wLBb5/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz-cHGjRLft84eo2SlgZK_Ec8AsRCZn20DHwFR7Cu7MVLD5dJ8W5KQUYVXBIHoGLB9K/exec";
 const DELETE_PASSWORD = "00000";
-const CATEGORY = "home"; // 👈 HOME PAGE CATEGORY
-/* ========================================= */
 
 function getDomain(url) {
   try { return new URL(url).hostname; }
@@ -163,16 +160,10 @@ function getDomain(url) {
 
 async function addVideo() {
   if (!videoUrl.value.trim()) return alert("Paste a URL");
-
   await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({
-      url: videoUrl.value.trim(),
-      title: videoTitle.value.trim(),
-      category: CATEGORY
-    })
+    body: JSON.stringify({ url: videoUrl.value, title: videoTitle.value })
   });
-
   videoUrl.value = "";
   videoTitle.value = "";
   loadVideos();
@@ -183,7 +174,7 @@ async function renameTitle(url, newTitle) {
     method: "POST",
     body: JSON.stringify({
       action: "rename",
-      url,
+      url: url,
       title: newTitle
     })
   });
@@ -192,19 +183,16 @@ async function renameTitle(url, newTitle) {
 async function deleteVideo(url) {
   if (prompt("Delete password:") !== DELETE_PASSWORD) return;
   if (!confirm("Delete this video?")) return;
-
   await fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({ action: "delete", url })
   });
-
   loadVideos();
 }
 
 async function loadVideos() {
-  const res = await fetch(`${API_URL}?category=${CATEGORY}`);
+  const res = await fetch(API_URL);
   const data = await res.json();
-
   videoGrid.innerHTML = "";
 
   data.reverse().forEach(([url, title]) => {
@@ -215,22 +203,21 @@ async function loadVideos() {
       <iframe src="${url}" allowfullscreen></iframe>
       <div class="title" ondblclick="startEdit(this,'${url}')">${title || "Untitled"}</div>
       <div class="actions">
-        <a href="${url}" target="_blank" title="Open">
+        <a href="${url}" target="_blank">
           <img src="https://www.google.com/s2/favicons?domain=${getDomain(url)}&sz=64">
         </a>
-        <button class="delete-btn" onclick="deleteVideo('${url}')" title="Delete">
+        <button class="delete-btn" onclick="deleteVideo('${url}')">
           <svg viewBox="0 0 24 24">
             <path d="M3 6h18v2H3zm2 3h14l-1 12H6L5 9zm5-5h4l1 2H9l1-2z"/>
           </svg>
         </button>
       </div>
     `;
-
     videoGrid.appendChild(card);
   });
 }
 
-/* ✏️ TITLE EDIT */
+/* ✏️ TRIPLE CLICK (dblclick workaround) */
 function startEdit(el, url) {
   const input = document.createElement("input");
   input.value = el.innerText;
