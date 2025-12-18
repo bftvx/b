@@ -144,14 +144,17 @@ iframe {
   <input id="videoUrl" placeholder="Paste URL">
   <input id="videoTitle" placeholder="Video title">
   <br>
-  <button onclick="addVideo()">➕</button>
+  <button onclick="addVideo()" title="Add video">➕</button>
 </div>
 
 <div class="video-grid" id="videoGrid"></div>
 
 <script>
+/* ================= CONFIG ================= */
 const API_URL = "https://script.google.com/macros/s/AKfycbyjqZhpVgBhgS_6akC-mJsM6C_odDlxK4ciCgGncrEerM_ImiOtCP-c3fAEn2dlSYCD/exec";
 const DELETE_PASSWORD = "00000";
+const CATEGORY = "home"; // 👈 HOME PAGE CATEGORY
+/* ========================================= */
 
 function getDomain(url) {
   try { return new URL(url).hostname; }
@@ -160,10 +163,16 @@ function getDomain(url) {
 
 async function addVideo() {
   if (!videoUrl.value.trim()) return alert("Paste a URL");
+
   await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({ url: videoUrl.value, title: videoTitle.value })
+    body: JSON.stringify({
+      url: videoUrl.value.trim(),
+      title: videoTitle.value.trim(),
+      category: CATEGORY
+    })
   });
+
   videoUrl.value = "";
   videoTitle.value = "";
   loadVideos();
@@ -174,7 +183,7 @@ async function renameTitle(url, newTitle) {
     method: "POST",
     body: JSON.stringify({
       action: "rename",
-      url: url,
+      url,
       title: newTitle
     })
   });
@@ -183,16 +192,19 @@ async function renameTitle(url, newTitle) {
 async function deleteVideo(url) {
   if (prompt("Delete password:") !== DELETE_PASSWORD) return;
   if (!confirm("Delete this video?")) return;
+
   await fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({ action: "delete", url })
   });
+
   loadVideos();
 }
 
 async function loadVideos() {
-  const res = await fetch(API_URL);
+  const res = await fetch(`${API_URL}?category=${CATEGORY}`);
   const data = await res.json();
+
   videoGrid.innerHTML = "";
 
   data.reverse().forEach(([url, title]) => {
@@ -203,21 +215,22 @@ async function loadVideos() {
       <iframe src="${url}" allowfullscreen></iframe>
       <div class="title" ondblclick="startEdit(this,'${url}')">${title || "Untitled"}</div>
       <div class="actions">
-        <a href="${url}" target="_blank">
+        <a href="${url}" target="_blank" title="Open">
           <img src="https://www.google.com/s2/favicons?domain=${getDomain(url)}&sz=64">
         </a>
-        <button class="delete-btn" onclick="deleteVideo('${url}')">
+        <button class="delete-btn" onclick="deleteVideo('${url}')" title="Delete">
           <svg viewBox="0 0 24 24">
             <path d="M3 6h18v2H3zm2 3h14l-1 12H6L5 9zm5-5h4l1 2H9l1-2z"/>
           </svg>
         </button>
       </div>
     `;
+
     videoGrid.appendChild(card);
   });
 }
 
-/* ✏️ TRIPLE CLICK (dblclick workaround) */
+/* ✏️ TITLE EDIT */
 function startEdit(el, url) {
   const input = document.createElement("input");
   input.value = el.innerText;
